@@ -1,20 +1,15 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Main.java to edit this template
- */
-package evolving.life;
+
+package evolving.life; 
 
 /**
  *
- * @author marce
+ * @author Marcelo Augusto Mertz
+ * 
  */
 public class EvolvingLife {
 
-    /**
-     * @param args the command line arguments
-     */
+
     public static void main(String[] args) {
-        // TODO code application logic here
     }
     
 }
