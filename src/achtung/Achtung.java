@@ -66,7 +66,7 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
     ArrayList AIcontrol = new ArrayList(); //this will have the order of clicked cells
     
     Boolean youWin = false, gameOver = false, safeMove = false;
-    int lin = 4, col = 4, mines = 3;
+    int lin = 20, col = 20 , mines = 40;
     int clearedAreas = 0;
     
     JTextArea debugPannel = new JTextArea("Starting debug: ", 4, 64);

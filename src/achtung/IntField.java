@@ -31,7 +31,6 @@ public class IntField extends JTextField implements CaretListener {
         this.setForeground(defColor);
     }
 
-    @Override
     public void caretUpdate(CaretEvent e) {
         trace(e);
         String newValue = this.getText();
