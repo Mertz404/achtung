@@ -122,4 +122,7 @@ public class Landmine extends JPanel{
             }
         }
     }
+    public void setBkg(){
+        cover.setBackground(Color.red);
+    }
 }

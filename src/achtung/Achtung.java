@@ -36,9 +36,6 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
     ArrayList<LayoutManager> mainPanesLayoutMng = new ArrayList();
     Landmine[][] landmines;
     Boolean [][] revealedArea;
-    int [][] aiLandField;
-    Boolean [][] solvedCell;
-    Point [] RevealedPosition;
     Timer AITimer;
     Boolean AIisON = false;
     
@@ -82,7 +79,6 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setPreferredSize(new Dimension (900,600));
         
-        RevealedPosition = new Point[lin*col];
         
         
         mainPanesDimensions.add(new Dimension(800,50));
@@ -188,8 +184,7 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
         btn = new JButton("AI - Off");
         btn.setName("AI");
         btn.addMouseListener(this);
-        getJPanelByName(this.getContentPane(), mainPanesNames.get(0)).add(btn);
-        
+        getJPanelByName(this.getContentPane(), mainPanesNames.get(0)).add(btn);        
     }
     
     /**
@@ -202,7 +197,6 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
         getJPanelByName(this.getContentPane(), mainPanesNames.get(2)).setLayout(new GridLayout(lin, col, 0, 0));
         landmines = new Landmine[lin][col];     
         revealedArea = new Boolean[lin][col];
-        solvedCell = new Boolean[lin][col];
         //AI 0.9 use those variables
         AIgrid = new ArrayList(); // this will retain the clickable cells
         AIcontrol = new ArrayList(); //this will have the order of clicked cells
@@ -214,7 +208,6 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
                 landmines[l][c] = new Landmine(intToString(l, 2)+intToString(c, 2));
                 landmines[l][c].addMouseListener(this);
                 revealedArea[l][c] = false;
-                solvedCell[l][c] = false;
                 gameOver = false;
                 youWin = false;
                 
@@ -270,9 +263,8 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
                 cont += isMined(cL-1,cC+1);
                 cont += isMined(cL,cC+1);
                 cont += isMined(cL+1,cC+1);
-                if (cont > 0){
                 landmines[cL][cC].setLabel(""+cont);
-                }
+                
             }}
         }
     }
@@ -305,11 +297,10 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
             //do nothing, coords are out of bounds.
         } else {
             // if the cell have no warnings and isnt revealed, do reveal it and search neighboards
-            if (landmines[l][c].getLabel()=="" && !revealedArea[l][c]){
+            if (landmines[l][c].getLabel().equals("0") && !revealedArea[l][c]){
                 revealArea(l,c);
                 verifyNeighborhod(l, c);
-            } else if (!revealedArea[l][c]) {
-                
+            } else if (!revealedArea[l][c]) {                
                 revealArea(l,c);
             }
         }
@@ -330,7 +321,7 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
             ArrayList list = new ArrayList();
             list.add(new Dimension(l,c));
             String lbl = landmines[l][c].getLabel();
-            if (lbl != ""){
+            if (lbl != "0"){
                 list.add(Integer.parseInt(landmines[l][c].getLabel()));
             } else {
                 list.add(0);
@@ -401,7 +392,7 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
         Landmine lm = landmines[lin][col];
         if (!lm.isDisabled()){
         revealArea(lin, col);
-        if (lm.getLabel()==""){
+        if (lm.getLabel().equals("0")){
             verifyNeighborhod(lin, col);
         }
         if (lm.isMine() && !lm.isDisabled()){
@@ -495,10 +486,12 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
         } else {
             trace("you dragged the mouse out of the target.");
         }
+        
     }
 
     @Override
     public void mousePressed(MouseEvent e) {
+        
         //throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
@@ -512,6 +505,14 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
     public void mouseEntered(MouseEvent e) {
         
         tempClickTarget = e.getSource();
+        try {
+        Landmine lm = (Landmine)e.getSource();
+        int lin = Integer.parseInt(lm.getName().substring(0, 2));
+        int col = Integer.parseInt(lm.getName().substring(2, 4));
+        //getAreaAroundTarget(lin, col);
+        } catch (Exception ex){
+            trace(ex);
+        }
         //throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
@@ -548,16 +549,6 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
             aiAction();
         }
     }
-    /**
-     * 
-     * 
-     * 
-     *  Boolean [][] revealedArea;
-        Point [] RevealedPosition;
-        int [][] aiLandField;
-        Boolean [][] solvedCell;
-    * 
-     */
     
     public ArrayList neighborhodLabels(int linY, int colX){
         ArrayList list = new ArrayList();
@@ -594,7 +585,7 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
                                 item = new ArrayList();
                                 item.add(new Dimension(y, x));
                                 item.add(true);
-                                if (landmines[y][x].getLabel() != ""){
+                                if (landmines[y][x].getLabel() != "0"){
                                     item.add(Integer.parseInt(landmines[y][x].getLabel()));
                                 } else {
                                     item.add(0);
@@ -615,14 +606,14 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
         // just to control if the AI made something");
         Boolean AiMadeSomething = false;
         // In case the AI is turned ON with no uncovered cells");
-        if (AIcontrol.size() > 0){
+        if (AIcontrol.size() > 0 ){
             for (int cont = 0; cont < AIcontrol.size();cont++){
                 //get the know atributes of the current cell.");
                 int linY = (int)((Dimension)((ArrayList)AIcontrol.get(cont)).get(0)).getWidth();
                 int colX = (int)((Dimension)((ArrayList)AIcontrol.get(cont)).get(0)).getHeight();
                 int dangerValue = (int)((ArrayList)AIcontrol.get(cont)).get(1);
                 Boolean solved = (Boolean)((ArrayList)AIcontrol.get(cont)).get(2);
-                trace("Coord: ["+linY+"]["+colX+"] Danger: ["+dangerValue+"] Solved: ["+solved+"].");
+                //trace("Coord: ["+linY+"]["+colX+"] Danger: ["+dangerValue+"] Solved: ["+solved+"].");
                 //if the current cell is not solved, check if it can be solved!"+
                 // the first step is to try to disable neighborhod bombs");
                 if (!solved){
@@ -663,6 +654,7 @@ trace("here the ai will add a item to AIcontrol who mayble can cause a "
                         }
                         solved = true;
                         ((ArrayList)AIcontrol.get(cont)).set(2, solved);
+                        AiMadeSomething = true;
                     }
                     // after marking all possible bombs, if still not solved
                     // verify if the dangerValue correspond the amount of know surounding mines
@@ -675,82 +667,65 @@ trace("here the ai will add a item to AIcontrol who mayble can cause a "
                                 cellLeftClick((int)d.getWidth(), (int)d.getHeight());
                             }
                         }
+                        AiMadeSomething = true;
                     }
                     
                 }
                 
                 int uncoveredCells = 0;
+                if(AiMadeSomething){
+                    AiMadeSomething = false;
+                    break;
+                } else {
+                    //must suround with try catch
+                    //Dimension dim = (Dimension) AIgrid.get((int)(Math.random()*AIgrid.size()));
+                    //cellLeftClick(dim.height, dim.width);
+                    //AiMadeSomething = true;
+                }
             }
         } else {
+            //must surround with try catch
             // open a random cell
-            int linY = (int) Math.random()*lin;
-            int colX = (int) Math.random()*col;
-            //cellLeftClick(linY, colX);
-            AiMadeSomething = true;
+            //Dimension dim = (Dimension) AIgrid.get((int)(Math.random()*AIgrid.size()));
+            //cellLeftClick(dim.height, dim.width);
+            //AiMadeSomething = true;
         }
-        
-        
-        /**
-         * First try to make AI, can only mark bombs it can find in the field.
-         *
-        
-        for (int linY = 0; linY < lin; linY++){
-            for (int colX = 0; colX < col; colX++){
-                if (!landmines[linY][colX].isCovered()){
-                    if (!solvedCell[linY][colX]){
-                        if (landmines[linY][colX].getLabel().equals("")){
-                            solvedCell[linY][colX] = true;
-                        } else {
-                            int thisDangerLevel = Integer.parseInt(landmines[linY][colX].getLabel());
-                            trace("Checking coord["+linY+"]["+colX+"] | DangerLevel = "+thisDangerLevel);
-                            ArrayList list = neighborhodLabels(linY, colX);
-                            int totalVisibleCells = 0;
-                            
-                            for (int c = 0; c < list.size();c++){
-                                
-                                trace(list.get(c));
-                                if ((Boolean)((ArrayList)list.get(c)).get(1)){
-                                    totalVisibleCells++;
-                                }
-                            }
-                            //find and disable cells with bombs
-                            //this code pass, it work - but not optimized
-                            trace("totalVisibleCells = " + totalVisibleCells + "thisDangerLevel = "+ thisDangerLevel);
-                            if (totalVisibleCells+thisDangerLevel == 8){
-                                trace("totalVisibleCells+thisDangerLevel == 8");
-                                for (int c = 0; c <list.size();c++){
-                                    if (!((Boolean)((ArrayList)list.get(c)).get(1))){
-                                        Dimension d =((Dimension)((ArrayList)list.get(c)).get(0));
-                                        int li = (int)d.getWidth();
-                                        int co = (int)d.getHeight();
-                                        trace("verify if landmines["+li+"]["+co+"] is disabled");
-                                        if (!landmines[li][co].isDisabled()){
-                                            trace("disabling it");
-                                            cellRightClick (li, co);
-                                        }
-                                        
-                                    }    
-                                }
-                                trace("set cell["+linY+"]["+colX+"] as solved");
-                                solvedCell[linY][colX] = true;
-                            }
-                            
-                            //verify neighboars who are also uncovered
-                            //if thisDangerLevel + uncoveredNeighbour == 7 the only covered is a bomb
-                            // mark the cell as a bomb
-                            //if thisDangerLevel + uncoveredNeighbour + markedBomb == 7 the covered is a safe cell to open
-                            
-                        }
+    }
+    
+    public void turnMLon(){
+        //this will load every area of 
+        for (int li = 0; li < lin; li++){
+            for (int co = 0; co < col; co++){
+                getAreaAroundTarget(li, co);
+            }
+        }
+    }
+    public ArrayList getAreaAroundTarget(int li, int co){
+        ArrayList list = new ArrayList();
+        inNeuron neuron = new inNeuron();
+        int minLine = li - 2, maxLine = li + 2;
+        int minColumn = co - 2, maxColumn = co + 2;
+        for (int y = minLine; y <= maxLine; y++){
+            for (int x = minColumn; x <= maxColumn; x++){
+                if (y < 0 || y > lin || x < 0 || x > col){
+                    trace("[debug getAreaAroundTarget(li, co)] pos y,x:" + y+", "+x+" = 10");
+                    list.add(new inNeuron(10.0));
+                } else {
+                    if (!landmines[y][x].isCovered()){
+                        trace("[debug getAreaAroundTarget(li, co)] pos y,x:" + y+", "+x+" = " + landmines[y][x].getLabel());
+                        list.add(new inNeuron(Double.parseDouble(landmines[y][x].getLabel())));
                     } else {
-                        trace("The position: ["+linY+", "+colX+"] is solved, and the AI does nothing (delete this else)" );
+                        trace("[debug getAreaAroundTarget(li, co)] pos y,x:" + y+", "+x+" = 10");
+                        list.add(new inNeuron(10.0));
                     }
                 }
             }
         }
-        * */
-        
+        landmines[li][co].setBkg();
+        return list;
     }
 
+}
 
 
 
@@ -777,6 +752,43 @@ trace("here the ai will add a item to AIcontrol who mayble can cause a "
  * 5. Repeat from step 2;
  */
 
-
     
-}
+    /**
+     * Machine Learning project
+     * 
+     * The ML will have 25 inputs, 2 neural layers of at least 8 cells and 
+     * 4 possibles outputs
+     * 
+     * Step 1:
+     * The machine learning will analize a area of 5x5 around the target cell
+     * in other words, the imput area will be of 25 squares (including the target)
+     * The parameters will be the 'label' containing the danger of the tile.
+     * A covered tile will have the value of 10, a disabled 9.
+     * In the case of the analized area exceds the bounds of the minefield
+     * The cells out of bounds will be trated as covered.
+     * 
+     * The weights will be random. and whould be rearanged latter.
+     * 
+     * Step 2:
+     * Processing the input in the 1st layer.
+     * Each neural layer will receive the (parameter * weight) of each input and
+     * sum it, after add a *bias* (random initialized from the neuron itself)
+     * after it, the result will be 'flattened' via a sigmoid function to a 
+     * value between 0 ~ 1. This value will be then passed forward.
+     * 
+     * The outcome could be "0 = Unknow", "1 = Uncertain", "2 = Bomb" or "3 = Good to go"
+     * The outcome will be displayed to the user in the minefield with the
+     * cell background color atribbute.
+     * "0 = Unknow" -> Gray (no changes)
+     * "1 = Uncertain" -> Yellow
+     * "2 = Bomb" -> Red
+     * "3 = Good to go" -> Green
+     * 
+     * 1. Open or not:
+     * The neural must decide when to open or not, a cell.
+     * it will analize an area of 5x5 around the desired cell.
+     * The values for inputs should be equal to the visible label, 
+     * For that, the analises should be just looking the neighborhood of chosen
+     * cell. The visible labels should have weight 
+     * 
+     */
