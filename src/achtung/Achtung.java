@@ -1,26 +1,9 @@
 package achtung;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Container;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.GridLayout;
-import java.awt.LayoutManager;
-import java.awt.List;
-import java.awt.Point;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
 import java.util.ArrayList;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.Timer;
 
 /**
  *
@@ -62,8 +45,22 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
     ArrayList AIgrid = new ArrayList(); // this will retain the clickable cells
     ArrayList AIcontrol = new ArrayList(); //this will have the order of clicked cells
     
+    
+    /**
+     * Those are the ML variables.
+     */
+    private final int INPUT_NEURONS = 25;
+    private final int INTERNEURONS_A = 10;
+    private final int INTERNEURONS_B = 10;
+    private final int MOTORNEURONS = 4;
+    private static Neuron[] inputs;
+    private static Neuron[] inA;
+    private static Neuron[] inB;
+    private static Neuron[] mN;
+    
+    
     Boolean youWin = false, gameOver = false, safeMove = false;
-    int lin = 20, col = 20 , mines = 40;
+    int lin = 10, col = 10 , mines = 10;
     int clearedAreas = 0;
     
     JTextArea debugPannel = new JTextArea("Starting debug: ", 4, 64);
@@ -75,11 +72,12 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
     Object tempClickTarget = new Object();
     
     public Achtung(){
-        
+                
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setPreferredSize(new Dimension (900,600));
         
-        
+        //initialize ML brain
+        createBrain();
         
         mainPanesDimensions.add(new Dimension(800,50));
         mainPanesDimensions.add(new Dimension (100, 500));
@@ -425,11 +423,13 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
             } else if (e.getButton()==3){
                 cellRightClick(lin, col);
             }
+            turnMLon();
         } else if (e.getSource()instanceof JButton){
             JButton b = (JButton)e.getSource();
             if (b.getName().equals("new")){
                 removeMineField();
                 createMineField();
+                trace("################# NEW GAME #################");
             } else if (b.getName().equals("AI")){
                 toggleAI(b);
             } else if (b.getName().equals("changeMineSettings")) {
@@ -473,7 +473,7 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
                 if (mines >= (col*lin)){
                     problemFound = true;
                 }
-                trace(problemFound);
+                trace("problema encontrado: "+problemFound);
                 if (!problemFound){
                     this.lin = lin;
                     this.col = col;
@@ -511,7 +511,7 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
         int col = Integer.parseInt(lm.getName().substring(2, 4));
         //getAreaAroundTarget(lin, col);
         } catch (Exception ex){
-            trace(ex);
+            //trace(ex);
         }
         //throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
@@ -601,10 +601,12 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
         }
         return list;
     }
-    
+        
     public void aiAction(){
         // just to control if the AI made something");
         Boolean AiMadeSomething = false;
+        // force to slow depurate
+        Boolean beSlow = true;
         // In case the AI is turned ON with no uncovered cells");
         if (AIcontrol.size() > 0 ){
             for (int cont = 0; cont < AIcontrol.size();cont++){
@@ -645,8 +647,7 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
                                     item.add(9);
                                     item.add(false);
                                     AIgrid.remove(new Dimension(li,co));// this will retain the clickable cells
-trace("here the ai will add a item to AIcontrol who mayble can cause a "
-        + "error IF the same cell is already disabled manually - function aiAction()");                                    
+
                                     AIcontrol.add(item);
                                     knowBombs++;
                                 }
@@ -673,7 +674,7 @@ trace("here the ai will add a item to AIcontrol who mayble can cause a "
                 }
                 
                 int uncoveredCells = 0;
-                if(AiMadeSomething){
+                if(AiMadeSomething && !beSlow){
                     AiMadeSomething = false;
                     break;
                 } else {
@@ -696,33 +697,187 @@ trace("here the ai will add a item to AIcontrol who mayble can cause a "
         //this will load every area of 
         for (int li = 0; li < lin; li++){
             for (int co = 0; co < col; co++){
-                getAreaAroundTarget(li, co);
+                if (landmines[li][co].isCovered()){
+                    newValues(getAreaAroundTarget(li, co));
+                    think(li, co);
+                }
             }
         }
     }
     public ArrayList getAreaAroundTarget(int li, int co){
         ArrayList list = new ArrayList();
-        inNeuron neuron = new inNeuron();
         int minLine = li - 2, maxLine = li + 2;
         int minColumn = co - 2, maxColumn = co + 2;
         for (int y = minLine; y <= maxLine; y++){
             for (int x = minColumn; x <= maxColumn; x++){
-                if (y < 0 || y > lin || x < 0 || x > col){
-                    trace("[debug getAreaAroundTarget(li, co)] pos y,x:" + y+", "+x+" = 10");
-                    list.add(new inNeuron(10.0));
+                if (y < 0 || y >= lin || x < 0 || x >= col){ //if out of bounds
+                    list.add(-1.0);
                 } else {
-                    if (!landmines[y][x].isCovered()){
-                        trace("[debug getAreaAroundTarget(li, co)] pos y,x:" + y+", "+x+" = " + landmines[y][x].getLabel());
-                        list.add(new inNeuron(Double.parseDouble(landmines[y][x].getLabel())));
+                    if (landmines[y][x].isCovered()){
+                        list.add(-1.0);
                     } else {
-                        trace("[debug getAreaAroundTarget(li, co)] pos y,x:" + y+", "+x+" = 10");
-                        list.add(new inNeuron(10.0));
+                        list.add(Double.parseDouble(landmines[y][x].getLabel())/2);
                     }
                 }
             }
         }
-        landmines[li][co].setBkg();
+        //trace(list);
         return list;
+    }
+    
+    /**
+     * @param val - refer to the value to be calculated
+     * @param type - refer to the type of formula to be used<BR>
+     * type 0 gives a value between -1/+1 and the bigger the value stray to 0 it goes<BR>
+     * type 1 gives a value between 0/1 and it can compress from -200(0) to +200(1)
+     */
+    private Double sigmoid(Double val, int type){
+      switch (type) {
+        case 0:
+          return val/(1+Math.abs(val));
+        case 1:
+          return (1 / (1+Math.exp(-val-10)));
+        default:
+          return 0.0;
+      }
+    }
+    
+    public void think(int l, int c){
+        for (int ina = 0; ina < inA.length; ina++){
+            Double val = 0.0;
+            for (int x = 0; x < INPUT_NEURONS;x++){
+                val += inputs[x].value() * inA[ina].getAncestor(x);
+            }
+            inA[ina].value(sigmoid(val,0));
+        }
+        for (int inb = 0; inb < inB.length; inb++){
+            Double val = 0.0;
+            for (int x = 0; x < INTERNEURONS_A; x++){
+                val += inA[x].value() * inB[inb].getAncestor(x);
+            }
+            inB[inb].value(sigmoid(val,0));            
+        }
+        //trace(inAVal);
+        for (int mn = 0; mn < mN.length; mn++){
+            Double val = 0.0;
+            for (int x = 0; x < INTERNEURONS_B; x++){
+                val += inB[x].value() * mN[mn].getAncestor(x);
+            }
+            mN[mn].value(sigmoid(val,1));
+        }
+        Double max = 0.0;
+        int maxPos = 0;
+        for (int x = 0; x < MOTORNEURONS;x++){
+            if (mN[x].value() > max){
+                maxPos = x;
+            }
+        }
+        String result= "";
+        maxPos = checkRealSituation(l, c);
+        switch (maxPos) {
+            case 0:
+                result = "Unknow";
+                landmines[l][c].setBkg(Color.gray);
+                break;
+            case 1:
+                result = "Uncertain";
+                landmines[l][c].setBkg(Color.yellow);
+                break;
+            case 2:
+                result = "Bomb";
+                landmines[l][c].setBkg(Color.red);
+                break;
+            case 3:
+                result = "Safe";
+                landmines[l][c].setBkg(Color.green);
+                break;
+        }
+        trace ("I think pos("+l+", "+c+") is " + result);
+    }
+    
+    public int checkRealSituation(int lin, int col){
+      /*mN[0] seek for unknow - gray
+        mN[1] seek for uncertain - yellow
+        mN[2] seek for bomb - red
+        mN[3] seek for safe - green */
+        
+        int neighborCovered = 0;
+        for (int li = (lin-1); li <=(lin+1);li++){
+          for (int co = (col-1); co <= (col+1); co++){
+            if (li < 0 || li >= this.lin || co < 0 || co >= this.col){
+                neighborCovered++;
+            } else {
+              if (landmines[li][co].isCovered()){
+                neighborCovered++;
+              } else {
+                int dl = Integer.parseInt(landmines[li][co].getLabel());
+                int outerNeighborhoodUncovered = 0;
+                int outerNeighborhoodDisabled = 0;
+                for (int l = (li-1); l <= (li+1);l++){
+                  for (int c = (co-1); c <= (co+1);c++){
+                    if (l < 0 || l >= this.lin || c < 0 || c >= this.col){
+                      outerNeighborhoodUncovered++;
+                    } else {
+                      if (!landmines[l][c].isCovered()){
+                        outerNeighborhoodUncovered++;
+                      }
+                      if (landmines[l][c].isDisabled()){
+                        outerNeighborhoodDisabled++;
+                      }
+                    }
+                  }
+                }
+                if (dl == outerNeighborhoodDisabled && !landmines[lin][col].isDisabled()){
+                  return 3; // safe
+                }
+                if (dl + outerNeighborhoodUncovered == 9){
+                  return 2; // bomb
+                }
+                
+              }
+            }
+          }
+        }
+        if (neighborCovered == 9){
+          return 0;
+        }
+        return 1;
+    }
+
+    public void newValues(ArrayList list){
+        if (list.size() == inputs.length){
+            for (int ind = 0; ind < inputs.length;ind++){
+                inputs[ind].value((Double)list.get(ind));
+            }
+        }
+    }
+    
+    public void createBrain (){
+        inputs = new Neuron[INPUT_NEURONS];
+        for (int in = 0; in < INPUT_NEURONS; in++){
+            inputs[in] =  new Neuron();
+        }
+        inA = new Neuron[INTERNEURONS_A];
+        for (int ina = 0; ina < INTERNEURONS_A;ina++){
+            inA[ina] = new Neuron();
+            for (int in = 0; in < INPUT_NEURONS; in++){
+                inA[ina].addAncestor(1.0);
+            }
+        }
+        inB = new Neuron[INTERNEURONS_B];
+        for (int inb = 0; inb < INTERNEURONS_B; inb++){
+            inB[inb] = new Neuron();
+            for (int ina = 0; ina < INTERNEURONS_A;ina++){
+                inB[inb].addAncestor(1.0);
+            }
+        }
+        mN = new Neuron[MOTORNEURONS];
+        for (int mn = 0; mn < MOTORNEURONS; mn++){
+            mN[mn] = new Neuron();
+            for (int inb = 0; inb < INTERNEURONS_B; inb++){
+                mN[mn].addAncestor(1.0);
+            }
+        }
     }
 
 }
@@ -792,3 +947,5 @@ trace("here the ai will add a item to AIcontrol who mayble can cause a "
      * cell. The visible labels should have weight 
      * 
      */
+
+

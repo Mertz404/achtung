@@ -72,7 +72,7 @@ public class Landmine extends JPanel{
     
     public void setCover(){
         cover = new JPanel();
-        cover.setBackground(Color.blue);
+        cover.setBackground(Color.gray);
         cover.setName("cover");
         cover.setLayout(new GridBagLayout());
         cover.add(lblDisabled);
@@ -97,7 +97,10 @@ public class Landmine extends JPanel{
             this.setLayout(new GridBagLayout());
             this.setBorder(null);
         
-            lbl.setVisible(true);
+            if (!lbl.getText().equals("0")){
+                lbl.setVisible(true);
+            }
+            
         }
     }
     
@@ -124,5 +127,8 @@ public class Landmine extends JPanel{
     }
     public void setBkg(){
         cover.setBackground(Color.red);
+    }
+    public void setBkg(Color col){
+        cover.setBackground(col);
     }
 }
