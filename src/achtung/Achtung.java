@@ -50,8 +50,8 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
      * Those are the ML variables.
      */
     private final int INPUT_NEURONS = 25;
-    private final int INTERNEURONS_A = 10;
-    private final int INTERNEURONS_B = 10;
+    private final int INTERNEURONS_A = 8;
+    private final int INTERNEURONS_B = 8;
     private final int MOTORNEURONS = 4;
     private static Neuron[] inputs;
     private static Neuron[] inA;
@@ -60,7 +60,8 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
     
     
     Boolean youWin = false, gameOver = false, safeMove = false;
-    int lin = 10, col = 10 , mines = 10;
+    int lin = 20, col = 20 , mines = 65, mines_left = mines;
+    private final int MINE_GAP = 1;
     int clearedAreas = 0;
     
     JTextArea debugPannel = new JTextArea("Starting debug: ", 4, 64);
@@ -98,8 +99,8 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
         mainPanesColors.add(Color.LIGHT_GRAY);
 
         mainPanesLayoutMng.add(new FlowLayout(FlowLayout.CENTER, 5, 5));
-        mainPanesLayoutMng.add(new FlowLayout(FlowLayout.CENTER, 5, 5));
-        mainPanesLayoutMng.add(new GridLayout(lin, col, 0, 0));
+        mainPanesLayoutMng.add(new GridLayout(5,1,5,5));//(FlowLayout.CENTER, 5, 5));
+        mainPanesLayoutMng.add(new GridLayout(lin, col, MINE_GAP, MINE_GAP));
         mainPanesLayoutMng.add(new BorderLayout());
         mainPanesLayoutMng.add(new FlowLayout(FlowLayout.CENTER, 5, 5));
         
@@ -138,51 +139,67 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
     }
     
     private void setWestPanel(){
-        JPanel pnl = new JPanel();
-        pnl.setLayout(new GridLayout(4,2));
-        JLabel lbl = new JLabel("Columns");
-        pnl.add(lbl);
-        IntField intF = new IntField();
-        intF.setText(""+col);
-        intF.setName("setCol");
-        intF.setPreferredSize(new Dimension(50, 27));
-        pnl.add(intF);
-        
-        lbl = new JLabel("Lines");
-        pnl.add(lbl);
-        intF = new IntField();
-        intF.setText(""+lin);
-        intF.setName("setLin");
-        intF.setPreferredSize(new Dimension(50, 27));
-        pnl.add(intF);
-        
-        lbl = new JLabel("Mines");
-        pnl.add(lbl);
-        intF = new IntField();
-        intF.setText(""+mines);
-        intF.setName("setMines");
-        intF.setPreferredSize(new Dimension(50, 27));
-        pnl.add(intF);
-        
-        JButton btn = new JButton("Apply!");
-        btn.addMouseListener(this);
-        btn.setName("changeMineSettings");
-        pnl.add(btn);
-        
-        getJPanelByName(this.getContentPane(), mainPanesNames.get(1)).add(pnl);
-        
-        
+      JPanel pnl = new JPanel();
+      pnl.setName("pnlConfigMineField");
+      pnl.setLayout(new GridLayout(4,2));
+      JLabel lbl = new JLabel("Columns");
+      pnl.add(lbl);
+      IntField intF = new IntField();
+      intF.setText(""+col);
+      intF.setName("setCol");
+      intF.setPreferredSize(new Dimension(50, 27));
+      pnl.add(intF);
+      
+      lbl = new JLabel("Lines");
+      pnl.add(lbl);
+      intF = new IntField();
+      intF.setText(""+lin);
+      intF.setName("setLin");
+      intF.setPreferredSize(new Dimension(50, 27));
+      pnl.add(intF);
+      
+      lbl = new JLabel("Mines");
+      pnl.add(lbl);
+      intF = new IntField();
+      intF.setText(""+mines);
+      intF.setName("setMines");
+      intF.setPreferredSize(new Dimension(50, 27));
+      pnl.add(intF);
+      
+      JButton btn = new JButton("Apply!");
+      btn.addMouseListener(this);
+      btn.setName("changeMineSettings");
+      pnl.add(btn);
+      
+      getJContainerByName(this.getContentPane(), mainPanesNames.get(1)).add(pnl);
+      
+      pnl = new JPanel();
+      pnl.setName("pnlMinesLeft");
+      pnl.setPreferredSize(new Dimension(29, 29));
+      
+      pnl.setLayout(new FlowLayout(FlowLayout.CENTER));
+      lbl = new JLabel("Mines left: ["+mines_left+"/"+mines+"]");
+      lbl.setName("lblMinesLeft");
+      lbl.setForeground(Color.red);
+      pnl.add(lbl);
+      
+      getJContainerByName(this.getContentPane(), mainPanesNames.get(1)).add(pnl);
+      
     }
     
     private void createTopMenu(){
-        JButton btn = new JButton("New Game");
-        btn.setName("new");
-        btn.addMouseListener(this);
-        getJPanelByName(this.getContentPane(), mainPanesNames.get(0)).add(btn);
-        btn = new JButton("AI - Off");
-        btn.setName("AI");
-        btn.addMouseListener(this);
-        getJPanelByName(this.getContentPane(), mainPanesNames.get(0)).add(btn);        
+      JButton btn = new JButton("New Game");
+      btn.setName("new");
+      btn.addMouseListener(this);
+      getJContainerByName(this.getContentPane(), mainPanesNames.get(0)).add(btn);
+      btn = new JButton("AI - Off");
+      btn.setName("AI");
+      btn.addMouseListener(this);
+      getJContainerByName(this.getContentPane(), mainPanesNames.get(0)).add(btn);
+      btn = new JButton("M.L. - ON");
+      btn.setName("ML");
+      btn.addMouseListener(this);
+      getJContainerByName(this.getContentPane(), mainPanesNames.get(0)).add(btn);
     }
     
     /**
@@ -191,154 +208,157 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
      * implementing here...
      */
     private void createMineField (){
-        //refresh the layout type to match the amount of rows and columns
-        getJPanelByName(this.getContentPane(), mainPanesNames.get(2)).setLayout(new GridLayout(lin, col, 0, 0));
-        landmines = new Landmine[lin][col];     
-        revealedArea = new Boolean[lin][col];
-        //AI 0.9 use those variables
-        AIgrid = new ArrayList(); // this will retain the clickable cells
-        AIcontrol = new ArrayList(); //this will have the order of clicked cells
-    
-        clearedAreas = 0;
-        for (int l = 0; l < lin; l++){
-            for (int c = 0; c <col; c++){
-                intToString(l, 3);
-                landmines[l][c] = new Landmine(intToString(l, 2)+intToString(c, 2));
-                landmines[l][c].addMouseListener(this);
-                revealedArea[l][c] = false;
-                gameOver = false;
-                youWin = false;
-                
-                AIgrid.add(new Dimension (l, c));
-            
-                getJPanelByName(this.getContentPane(), mainPanesNames.get(2)).add(landmines[l][c]);
-            }
+      //refresh the layout type to match the amount of rows and columns
+      getJContainerByName(this.getContentPane(), mainPanesNames.get(2)).setLayout(new GridLayout(lin, col, MINE_GAP, MINE_GAP));
+      landmines = new Landmine[lin][col];     
+      revealedArea = new Boolean[lin][col];
+      //AI 0.9 use those variables
+      AIgrid = new ArrayList(); // this will retain the clickable cells
+      AIcontrol = new ArrayList(); //this will have the order of clicked cells
+      mines_left = mines;
+      adjustMineCounter();
+      clearedAreas = 0;
+      for (int l = 0; l < lin; l++){
+        for (int c = 0; c <col; c++){
+          intToString(l, 3);
+          landmines[l][c] = new Landmine(intToString(l, 2)+intToString(c, 2));
+          landmines[l][c].addMouseListener(this);
+          revealedArea[l][c] = false;
+          gameOver = false;
+          youWin = false;
+          
+          AIgrid.add(new Dimension (l, c));
+          
+          getJContainerByName(this.getContentPane(), mainPanesNames.get(2)).add(landmines[l][c]);
         }
-        placeMines(); 
-        this.pack();
+      }
+      placeMines(); 
+      this.pack();
     }
     
     //Function to create String from a int value with '0' to the left
     private String intToString(int val, int lenght){
-        String temp = Integer.toString(val);
-        while (temp.length() < lenght){
-            temp = "0"+temp;
-        }
-        return temp;
+      String temp = Integer.toString(val);
+      while (temp.length() < lenght){
+        temp = "0"+temp;
+      }
+      return temp;
     }
+    
     //function to (re)generate the mine field. It uses global variables as 
     //values for amount of lines, columns and mines
     private void placeMines(){
-        ArrayList<Integer> minepos = new ArrayList();
-        int pos = 0;
-        for (int i = 0; i<mines; i++){
-            pos = (int)(Math.random()*(col*lin));
-            int pl = (int)pos/col;
-            int pc = pos - (pl*col);
-            if (!minepos.contains(pos)){
-                landmines[pl][pc].setMine();
-                landmines[pl][pc].setLabel("9");
-                minepos.add(pos);
-            } else {
-                i--;
-            }
+      ArrayList<Integer> minepos = new ArrayList();
+      for (int i = 0; i<mines; i++){
+        int pos = (int)(Math.random()*(col*lin));
+        int pl = (int)pos/col;
+        int pc = pos - (pl*col);
+        if (!minepos.contains(pos)){
+          landmines[pl][pc].setMine();
+          landmines[pl][pc].setLabel("9");
+          minepos.add(pos);
+        } else {
+          i--;
         }
-        setWarnings();
+      }
+      setWarnings();
     }
     
     //Function to verify the amount of surounding mines.
     private void setWarnings(){
-        int cont = 0;
-        for (int cL = 0; cL < lin; cL++){
-            for (int cC = 0; cC <col;cC++){
-            cont = 0;
-            if (!landmines[cL][cC].isMine()){
-                cont += isMined(cL-1,cC-1);
-                cont += isMined(cL,cC-1);
-                cont += isMined(cL+1,cC-1);
-                cont += isMined(cL-1,cC);
-                cont += isMined(cL+1,cC);
-                cont += isMined(cL-1,cC+1);
-                cont += isMined(cL,cC+1);
-                cont += isMined(cL+1,cC+1);
-                landmines[cL][cC].setLabel(""+cont);
-                
-            }}
+      int cont = 0;
+      for (int cL = 0; cL < lin; cL++){
+        for (int cC = 0; cC <col;cC++){
+          cont = 0;
+          if (!landmines[cL][cC].isMine()){
+            cont += isMined(cL-1,cC-1);
+            cont += isMined(cL,cC-1);
+            cont += isMined(cL+1,cC-1);
+            cont += isMined(cL-1,cC);
+            cont += isMined(cL+1,cC);
+            cont += isMined(cL-1,cC+1);
+            cont += isMined(cL,cC+1);
+            cont += isMined(cL+1,cC+1);
+            landmines[cL][cC].setLabel(""+cont);
+          }
         }
+      }
     }
     
     //function to verify if the specified coordinate have a mine
     private int isMined(int l, int c){
-        if (l < 0 || l >= lin || c < 0 || c >= col){ // if out of bounds
-            return 0; 
+      if (l < 0 || l >= lin || c < 0 || c >= col){ // if out of bounds
+        return 0; 
+      } else {
+        if (landmines[l][c].isMine()){
+          return 1;
         } else {
-            if (landmines[l][c].isMine()){
-                return 1;
-            } else {
-                return 0;
-            }
+          return 0;
         }
+      }
     }
+    
     private void verifyNeighborhod (int l, int c){
-        revealLandMine(l-1, c-1);
-        revealLandMine(l, c-1);
-        revealLandMine(l+1, c-1);
-        revealLandMine(l-1, c);
-        revealLandMine(l+1, c);
-        revealLandMine(l-1, c+1);
-        revealLandMine(l, c+1);
-        revealLandMine(l+1, c+1);        
+      revealLandMine(l-1, c-1);
+      revealLandMine(l, c-1);
+      revealLandMine(l+1, c-1);
+      revealLandMine(l-1, c);
+      revealLandMine(l+1, c);
+      revealLandMine(l-1, c+1);
+      revealLandMine(l, c+1);
+      revealLandMine(l+1, c+1);        
     }
+    
     private void revealLandMine(int l, int c){
-        //if out of bounds, do nothing
-        if (l < 0 || l >= lin || c < 0 || c >= col){
-            //do nothing, coords are out of bounds.
-        } else {
-            // if the cell have no warnings and isnt revealed, do reveal it and search neighboards
-            if (landmines[l][c].getLabel().equals("0") && !revealedArea[l][c]){
-                revealArea(l,c);
-                verifyNeighborhod(l, c);
-            } else if (!revealedArea[l][c]) {                
-                revealArea(l,c);
-            }
+      //if out of bounds, do nothing
+      if (l < 0 || l >= lin || c < 0 || c >= col){
+        //do nothing, coords are out of bounds.
+      } else {
+        // if the cell have no warnings and isnt revealed, do reveal it and search neighboards
+        if (landmines[l][c].getLabel().equals("0") && !revealedArea[l][c]){
+          revealArea(l,c);
+          verifyNeighborhod(l, c);
+        } else if (!revealedArea[l][c]) {                
+          revealArea(l,c);
         }
+      }
     }
+    
     //reveal área, if every cell (except the mines) are revealed, the output 'you win' in the console
     private void revealArea(int l, int c){
-        landmines[l][c].removeCover();
-        revealedArea[l][c] = true;
-        clearedAreas++;
-        trace("areas to clear: "+((lin*col)-mines-clearedAreas));
-        if ((clearedAreas == ((lin*col)-mines))&&!landmines[l][c].isMine()){
-            youWin = true;
-            gameOver = true;
-            trace("Game Over, you win " + youWin);
+      landmines[l][c].removeCover();
+      revealedArea[l][c] = true;
+      clearedAreas++;
+      trace("areas to clear: "+((lin*col)-mines-clearedAreas));
+      if ((clearedAreas == ((lin*col)-mines))&&!landmines[l][c].isMine()){
+        youWin = true;
+        gameOver = true;
+        trace("Game Over, you win " + youWin);
+      }
+      try {
+        AIgrid.remove(new Dimension(l,c));// this will retain the clickable cells
+        ArrayList list = new ArrayList();
+        list.add(new Dimension(l,c));
+        String lbl = landmines[l][c].getLabel();
+        if (lbl != "0"){
+          list.add(Integer.parseInt(landmines[l][c].getLabel()));
+        } else {
+          list.add(0);
         }
-        try {
-            AIgrid.remove(new Dimension(l,c));// this will retain the clickable cells
-            ArrayList list = new ArrayList();
-            list.add(new Dimension(l,c));
-            String lbl = landmines[l][c].getLabel();
-            if (lbl != "0"){
-                list.add(Integer.parseInt(landmines[l][c].getLabel()));
-            } else {
-                list.add(0);
-            }
-            list.add(false);
-            AIcontrol.add(list);//this will have the order of clicked cells
-        } catch (Exception aiEx){
-            trace("Something went wrong when handling AI at RevealArea function. " +aiEx);
-        }
-        
+        list.add(false);
+        AIcontrol.add(list);//this will have the order of clicked cells
+      } catch (Exception aiEx){
+        trace("Something went wrong when handling AI at RevealArea function. " +aiEx);
+      }
     }
     
     /**
      * Remove every content of the central JPanel
      */
     private void removeMineField(){
-        getJPanelByName(this.getContentPane(), mainPanesNames.get(2)).removeAll();
-        landmines = null;
-        getJPanelByName(this.getContentPane(), mainPanesNames.get(2)).repaint();
+      getJContainerByName(this.getContentPane(), mainPanesNames.get(2)).removeAll();
+      landmines = null;
+      getJContainerByName(this.getContentPane(), mainPanesNames.get(2)).repaint();
     }
     
     /**
@@ -346,29 +366,30 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
      * @param con Container mit Elementen
      * @param name JPanel name
      **/
-    public JPanel getJPanelByName(Container con, String name){
-        JPanel jp = new JPanel();
-        Boolean found = false;
-        try {
-            for (int i = 0; i < con.getComponentCount(); i++){
-                if (con.getComponent(i)instanceof JPanel){
-                    JPanel iftst = (JPanel)con.getComponent(i);
-                    if (iftst.getName().equals(name)){
-                        found = true;
-                        jp = iftst;
-                    }
-                }
+    public Container getJContainerByName(Container con, String name){
+      JPanel jp = new JPanel();
+      Container cont = con;
+      
+      Boolean found = false;
+      try {
+        for (int i = 0; i < con.getComponentCount(); i++){
+          if (con.getComponent(i)instanceof JPanel){
+            JPanel iftst = (JPanel)con.getComponent(i);
+            if (iftst.getName().equals(name)){
+              found = true;
+              jp = iftst;
             }
-            if (found) {
-                return jp;
-            } else {
-                trace("Not found a JPanel with name:"+name+"MP");
-                return null;
-            }
-        } catch (Exception err){
-            return null;
+          }
         }
-        
+        if (found) {
+          return jp;
+        } else {
+          trace("Not found a JPanel with name:"+name+"MP");
+          return null;
+        }
+      } catch (Exception err){
+        return null;
+      }        
     }
     
     /**
@@ -376,117 +397,154 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
      * @param o Object to be printed on output console
      */
     public void trace(Object o){
-        System.out.println(o);
-        if (debugActive){
-            debugPannel.append("\n"+o);
-            debugPannel.setCaretPosition(debugPannel.getDocument().getLength());
-        }
+      System.out.println(o);
+      if (debugActive){
+        debugPannel.append("\n"+o);
+        debugPannel.setCaretPosition(debugPannel.getDocument().getLength());
+      }
     }
     public static void main(String[] args) {
         Achtung ach = new Achtung();
     }
     
     private void cellLeftClick(int lin, int col){
-        Landmine lm = landmines[lin][col];
-        if (!lm.isDisabled()){
+      Landmine lm = landmines[lin][col];
+      if (!lm.isDisabled() && lm.isCovered()){
         revealArea(lin, col);
         if (lm.getLabel().equals("0")){
-            verifyNeighborhod(lin, col);
+          verifyNeighborhod(lin, col);
         }
         if (lm.isMine() && !lm.isDisabled()){
-            youWin = false;
-            gameOver = true;
-            trace("Game over, you win " + youWin);
-                for (int l=0;l<this.lin;l++){
-                    for (int c=0;c<this.col;c++){
-                        landmines[l][c].revealLandMine();
-                        landmines[l][c].removeMouseListener(this);
-                    }
-                }
+          youWin = false;
+          gameOver = true;
+          trace("Game over, you win " + youWin);
+          for (int l=0;l<this.lin;l++){
+            for (int c=0;c<this.col;c++){
+              landmines[l][c].revealLandMine();
+              landmines[l][c].removeMouseListener(this);
+            }
+          }
         }    
-        }
-        
+      }
+      turnMLon();
     }
+    
     private void cellRightClick (int lin, int col){
-        landmines[lin][col].togleDisable();
+      if (landmines[lin][col].isDisabled()){
+        mines_left++;
+      } else {
+        mines_left--;
+      }
+      adjustMineCounter();
+      landmines[lin][col].togleDisable();
+      turnMLon();
+    }
+    
+    private void adjustMineCounter(){
+      JPanel pnl = (JPanel) getJContainerByName(this.getContentPane(), mainPanesNames.get(1));
+      JLabel lbl = new JLabel("Mines left: ["+mines_left+"/"+mines+"]");
+      for (int i = 0; i <pnl.getComponentCount();i++){
+        try {
+          if (pnl.getComponent(i).getName().equals("pnlMinesLeft")){
+            for (int j = 0; j < ((Container)pnl.getComponent(i)).getComponentCount(); j++){
+              if (((Container)pnl.getComponent(i)).getComponent(j).getName().equals("lblMinesLeft")){
+                ((JLabel)((Container)pnl.getComponent(i)).getComponent(j)).
+                        setText("Mines left: ["+mines_left+"/"+mines+"]");
+              }
+            }
+          }
+        } catch (Exception asd){
+        }
+      }
     }
 
     @Override
     public void mouseReleased (MouseEvent e) {
-        if (e.getSource()==tempClickTarget){
+      if (e.getSource()==tempClickTarget){
         if(e.getSource()instanceof Landmine){
-            Landmine lm = (Landmine)e.getSource();
-            int lin = Integer.parseInt(lm.getName().substring(0, 2));
-            int col = Integer.parseInt(lm.getName().substring(2, 4));
-            if (e.getButton()==1){
-                cellLeftClick(lin, col);
-            } else if (e.getButton()==3){
-                cellRightClick(lin, col);
-            }
-            turnMLon();
+          Landmine lm = (Landmine)e.getSource();
+          int lin = Integer.parseInt(lm.getName().substring(0, 2));
+          int col = Integer.parseInt(lm.getName().substring(2, 4));
+          if (e.getButton()==1){
+            cellLeftClick(lin, col);
+          } else if (e.getButton()==3){
+            cellRightClick(lin, col);
+          }
         } else if (e.getSource()instanceof JButton){
-            JButton b = (JButton)e.getSource();
-            if (b.getName().equals("new")){
-                removeMineField();
-                createMineField();
-                trace("################# NEW GAME #################");
-            } else if (b.getName().equals("AI")){
-                toggleAI(b);
-            } else if (b.getName().equals("changeMineSettings")) {
-                int cont = 0, lin = 0, col = 0, mines = 0;
-                boolean problemFound = false;
-                try{
-                    JPanel pnl = (JPanel) b.getParent();
-                    int cc = pnl.getComponentCount();
-                    for (int a = 0; a < cc; a++){
-                        try {
-                            if (pnl.getComponent(a).getName().equals("setLin")){
-                                lin = Integer.parseInt(((IntField) pnl.getComponent(a)).getText());
-                                cont++;
-                            } else if (pnl.getComponent(a).getName().equals("setCol")){
-                                col = Integer.parseInt(((IntField) pnl.getComponent(a)).getText());
-                                cont++;
-                            } else if (pnl.getComponent(a).getName().equals("setMines")){
-                                mines = Integer.parseInt(((IntField) pnl.getComponent(a)).getText());
-                                cont++;
-                            }
-                                    
-                        } catch (Exception expp){
-                            
-                        }
-                    }
-                } catch (Exception exp){
-                    trace("Something went wrong on JButton changeMineSettings");
-                    problemFound = true;
+          JButton b = (JButton)e.getSource();
+          switch (b.getName()){
+            case "new":
+              removeMineField();
+              createMineField();
+              trace("################# NEW GAME #################");
+              break;
+            case "AI":
+              toggleAI(b);
+              break;
+            case "ML":
+              break;
+            case "changeMineSettings":
+              int cont = 0, lin = 0, col = 0, mines = 0;
+            boolean problemFound = false;
+            try{
+              JPanel pnl = (JPanel) b.getParent();
+              int cc = pnl.getComponentCount();
+              for (int a = 0; a < cc; a++){
+                try {
+                  if (pnl.getComponent(a).getName().equals("setLin")){
+                    lin = Integer.parseInt(((IntField) pnl.getComponent(a)).getText());
+                    cont++;
+                  } else if (pnl.getComponent(a).getName().equals("setCol")){
+                    col = Integer.parseInt(((IntField) pnl.getComponent(a)).getText());
+                    cont++;
+                  } else if (pnl.getComponent(a).getName().equals("setMines")){
+                    mines = Integer.parseInt(((IntField) pnl.getComponent(a)).getText());
+                    cont++;
+                  }
+                } catch (Exception expp){
                 }
-                if (cont != 3){
-                    problemFound = true;
-                }
-                if (lin > 50 || lin < 1){
-                    trace("invalid amount of lines");
-                    problemFound = true;
-                }
-                if (col > 50 || col < 1){
-                    trace("invalid amount of columns");
-                    problemFound = true;
-                }
-                if (mines >= (col*lin)){
-                    problemFound = true;
-                }
-                trace("problema encontrado: "+problemFound);
-                if (!problemFound){
-                    this.lin = lin;
-                    this.col = col;
-                    this.mines = mines;
-                    removeMineField();
-                    createMineField();
-                }
+              }
+            } catch (Exception exp){
+              trace("Something went wrong on JButton changeMineSettings");
+              problemFound = true;
             }
+            if (cont != 3){
+              problemFound = true;
+            }
+            if (lin > 50 || lin < 1){
+              trace("invalid amount of lines");
+              problemFound = true;
+            }
+            if (col > 50 || col < 1){
+              trace("invalid amount of columns");
+              problemFound = true;
+            }
+            if (mines >= (col*lin)){
+              problemFound = true;
+            }
+            if (!problemFound){
+              this.lin = lin;
+              this.col = col;
+              this.mines = mines;
+              removeMineField();
+              createMineField();
+            }
+            break;
+            default:
+              trace("mas oi?"+b.getName()+"foi pressionado...");
+              break;
+          }
+          if (b.getName().equals("new")){
+            
+          } else if (b.getName().equals("AI")){
+            
+          } else if (b.getName().equals("changeMineSettings")) {
+            
+          }
         }
-        } else {
-            trace("you dragged the mouse out of the target.");
-        }
-        
+      } else {
+        trace("you dragged the mouse out of the target.");
+      }
     }
 
     @Override
@@ -505,14 +563,6 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
     public void mouseEntered(MouseEvent e) {
         
         tempClickTarget = e.getSource();
-        try {
-        Landmine lm = (Landmine)e.getSource();
-        int lin = Integer.parseInt(lm.getName().substring(0, 2));
-        int col = Integer.parseInt(lm.getName().substring(2, 4));
-        //getAreaAroundTarget(lin, col);
-        } catch (Exception ex){
-            //trace(ex);
-        }
         //throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
@@ -704,6 +754,7 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
             }
         }
     }
+    
     public ArrayList getAreaAroundTarget(int li, int co){
         ArrayList list = new ArrayList();
         int minLine = li - 2, maxLine = li + 2;
@@ -736,7 +787,7 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
         case 0:
           return val/(1+Math.abs(val));
         case 1:
-          return (1 / (1+Math.exp(-val-10)));
+          return (1 / (1+Math.exp(-val/10)));
         default:
           return 0.0;
       }
@@ -792,7 +843,41 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
                 landmines[l][c].setBkg(Color.green);
                 break;
         }
-        trace ("I think pos("+l+", "+c+") is " + result);
+        adjustWeights(maxPos, checkRealSituation(l, c));
+        //trace ("I think pos("+l+", "+c+") is " + result);
+        
+        
+    }
+    
+    private void adjustWeights(int mlAnswer, int correctAnswer){
+      
+      //adjust motor weights
+      for (int mn = 0; mn < mN.length; mn++){
+        if (mn == correctAnswer){
+          Double highest=0.0, second=0.0, third=0.0;
+          int posH = 0, posS = 0, posT = 0;
+          for (int anc = 0; anc < mN[mn].getAncestorCount();anc++){
+            if (mN[mn].getAncestor(anc) >= highest){
+              third = second; posT = posS;
+              second = highest; posS = posH;
+              highest = mN[mn].getAncestor(anc); posH = anc;
+            }
+          }
+          for (int anc = 0; anc < mN[mn].getAncestorCount();anc++){
+            String as = "Anc."+anc+" from: ";
+            as += mN[mn].getAncestor(anc) +" to: ";
+            if (anc == posH || anc == posS || anc == posT){
+              mN[mn].setAncestor(anc, mN[mn].getAncestor(anc)+((Math.sqrt(Math.abs(mN[mn].getAncestor(anc))-1))/2)  );
+            } else {
+              mN[mn].setAncestor(anc, mN[mn].getAncestor(anc)-((Math.sqrt(Math.abs(mN[mn].getAncestor(anc))-0))/2)  );              
+            }
+            as += mN[mn].getAncestor(anc);
+            trace(as);
+          }
+        }
+      }
+      //adjust second layer
+      //adjust first layer
     }
     
     public int checkRealSituation(int lin, int col){
@@ -800,7 +885,10 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
         mN[1] seek for uncertain - yellow
         mN[2] seek for bomb - red
         mN[3] seek for safe - green */
-        
+        ArrayList[] realSit = new ArrayList[4];
+        for (int i = 0; i < realSit.length; i++){
+          realSit[i] = new ArrayList();
+        }
         int neighborCovered = 0;
         for (int li = (lin-1); li <=(lin+1);li++){
           for (int co = (col-1); co <= (col+1); co++){
@@ -828,9 +916,11 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
                   }
                 }
                 if (dl == outerNeighborhoodDisabled && !landmines[lin][col].isDisabled()){
+                  realSit[3].add(new Point(lin, col));
                   return 3; // safe
                 }
                 if (dl + outerNeighborhoodUncovered == 9){
+                  realSit[2].add(new Point(lin, col));
                   return 2; // bomb
                 }
                 
@@ -839,12 +929,14 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
           }
         }
         if (neighborCovered == 9){
+          realSit[0].add(new Point(lin, col));
           return 0;
         }
+        realSit[1].add(new Point(lin, col));
         return 1;
     }
-
-    public void newValues(ArrayList list){
+    
+     public void newValues(ArrayList list){
         if (list.size() == inputs.length){
             for (int ind = 0; ind < inputs.length;ind++){
                 inputs[ind].value((Double)list.get(ind));
