@@ -194,10 +194,12 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
       getJContainerByName(this.getContentPane(), mainPanesNames.get(0)).add(btn);
       btn = new JButton("AI - Off");
       btn.setName("AI");
+      btn.setToolTipText("AI is set to slow");
       btn.addMouseListener(this);
       getJContainerByName(this.getContentPane(), mainPanesNames.get(0)).add(btn);
-      btn = new JButton("M.L. - ON");
+      btn = new JButton("M.L. - Off");
       btn.setName("ML");
+      btn.setEnabled(false);
       btn.addMouseListener(this);
       getJContainerByName(this.getContentPane(), mainPanesNames.get(0)).add(btn);
     }
@@ -595,7 +597,6 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
     public void actionPerformed(ActionEvent e) {
         //throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
         if (AIisON && (e.getSource()instanceof Timer)){
-            trace("action performed is instance of Timer - " + e.getSource());
             aiAction();
         }
     }
@@ -656,7 +657,7 @@ public class Achtung extends JFrame implements MouseListener, ActionListener{
         // just to control if the AI made something");
         Boolean AiMadeSomething = false;
         // force to slow depurate
-        Boolean beSlow = true;
+        Boolean beSlow = false;
         // In case the AI is turned ON with no uncovered cells");
         if (AIcontrol.size() > 0 ){
             for (int cont = 0; cont < AIcontrol.size();cont++){
